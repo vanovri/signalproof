@@ -16,12 +16,12 @@ Node.js 20 or newer. No npm dependencies or build step.
 
 ```sh
 npm start
-# Open http://127.0.0.1:8787
+# Open http://127.0.0.1:8789
 npm test
 npm run evaluate
 ```
 
-If that port is occupied, set `PORT=8789` before starting. On PowerShell: `$env:PORT='8789'; npm start`.
+If that port is occupied, set `PORT=8790` before starting. On PowerShell: `$env:PORT='8790'; npm start`.
 
 The static interface also works on GitHub Pages. AI explanations require the Node server and credentials. Opening index.html directly with file:// does not support module loading reliably.
 

@@ -59,7 +59,7 @@ $('explain').addEventListener('click',async()=>{
   try{
     const token=$('access').value,headers={'Content-Type':'application/json'};if(token)headers.Authorization=`Bearer ${token}`;
     const response=await fetch('/api/analyze',{method:'POST',headers,signal:AbortSignal.timeout(30000),body:JSON.stringify({rows,options:{railMin:report.railMin,railMax:report.railMax},explain:true,language:$('language').value})});
-    if(!response.ok){let message='AI needs the local SignalProof server. Run npm start, then open localhost:8787.';if(response.status===403)message='Enter the owner access token for this hosted server.';throw Error(message);}
+    if(!response.ok){let message='AI needs the local SignalProof server. Run npm start, then open localhost:8789.';if(response.status===403)message='Enter the owner access token for this hosted server.';throw Error(message);}
     const result=await response.json();if(current!==revision)return;const e=result.explanation;
     $('ai-status').textContent=e.status==='live'?`Live response / ${e.model}`:e.message||e.status;
     if(e.status==='live'){
