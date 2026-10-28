@@ -1,0 +1,166 @@
+{
+  "date": "2026-10-28T12:58:26.899Z",
+  "scope": "15 synthetic scenarios using known construction labels. Checks deterministic flags, not AI quality or real-world accuracy.",
+  "passed": 15,
+  "total": 15,
+  "cases": [
+    {
+      "name": "healthy-200Hz",
+      "expected": [
+        "no-flags"
+      ],
+      "actual": [
+        "no-flags"
+      ],
+      "pass": true
+    },
+    {
+      "name": "hum-200Hz",
+      "expected": [
+        "hum"
+      ],
+      "actual": [
+        "hum"
+      ],
+      "pass": true
+    },
+    {
+      "name": "clipping-200Hz",
+      "expected": [
+        "clipping"
+      ],
+      "actual": [
+        "clipping"
+      ],
+      "pass": true
+    },
+    {
+      "name": "gaps-200Hz",
+      "expected": [
+        "spectrum-unavailable",
+        "timing"
+      ],
+      "actual": [
+        "spectrum-unavailable",
+        "timing"
+      ],
+      "pass": true
+    },
+    {
+      "name": "flat-200Hz",
+      "expected": [
+        "flat"
+      ],
+      "actual": [
+        "flat"
+      ],
+      "pass": true
+    },
+    {
+      "name": "healthy-250Hz",
+      "expected": [
+        "no-flags"
+      ],
+      "actual": [
+        "no-flags"
+      ],
+      "pass": true
+    },
+    {
+      "name": "hum-250Hz",
+      "expected": [
+        "hum"
+      ],
+      "actual": [
+        "hum"
+      ],
+      "pass": true
+    },
+    {
+      "name": "clipping-250Hz",
+      "expected": [
+        "clipping"
+      ],
+      "actual": [
+        "clipping"
+      ],
+      "pass": true
+    },
+    {
+      "name": "gaps-250Hz",
+      "expected": [
+        "spectrum-unavailable",
+        "timing"
+      ],
+      "actual": [
+        "spectrum-unavailable",
+        "timing"
+      ],
+      "pass": true
+    },
+    {
+      "name": "flat-250Hz",
+      "expected": [
+        "flat"
+      ],
+      "actual": [
+        "flat"
+      ],
+      "pass": true
+    },
+    {
+      "name": "healthy-500Hz",
+      "expected": [
+        "no-flags"
+      ],
+      "actual": [
+        "no-flags"
+      ],
+      "pass": true
+    },
+    {
+      "name": "hum-500Hz",
+      "expected": [
+        "hum"
+      ],
+      "actual": [
+        "hum"
+      ],
+      "pass": true
+    },
+    {
+      "name": "clipping-500Hz",
+      "expected": [
+        "clipping"
+      ],
+      "actual": [
+        "clipping"
+      ],
+      "pass": true
+    },
+    {
+      "name": "gaps-500Hz",
+      "expected": [
+        "spectrum-unavailable",
+        "timing"
+      ],
+      "actual": [
+        "spectrum-unavailable",
+        "timing"
+      ],
+      "pass": true
+    },
+    {
+      "name": "flat-500Hz",
+      "expected": [
+        "flat"
+      ],
+      "actual": [
+        "flat"
+      ],
+      "pass": true
+    }
+  ],
+  "liveModelEvaluated": false,
+  "hardwareEvaluated": false
+}

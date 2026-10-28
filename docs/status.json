@@ -1,0 +1,15 @@
+{
+  "asOf": "2026-10-28",
+  "deterministicPrototype": "working",
+  "codeTests": {"passed":14,"total":14},
+  "syntheticScenarios": {"passed":15,"total":15},
+  "liveMetaInference": "blocked",
+  "blocker": "Fireworks rejected API key creation: account is suspended due to CREDIT_DEPLETED.",
+  "apiKeysCreatedByThisTask": 0,
+  "providerInferenceCallsByThisTask": 0,
+  "providerInferenceSpendByThisTaskUSD": 0,
+  "modalWorkloadsDeployed": false,
+  "realHardwareEvaluated": false,
+  "video": "Narrated three-minute walkthrough using actual application screenshots and synthetic captures. It explicitly states the live-inference limitation.",
+  "submission": "Prepared draft. Final acceptance and submission have not been performed."
+}
