@@ -73,7 +73,7 @@ test('mocked provider response uses measurement-only context, not raw samples',a
     const result=await explain(report,'id',async(url,options)=>{
       assert.equal(url,'https://api.fireworks.ai/inference/v1/chat/completions');const body=JSON.parse(options.body);
       const context=JSON.parse(body.messages[1].content);assert.equal(context.rows,undefined);assert.equal(context.spectrum,undefined);
-      assert.match(body.messages[0].content,/Indonesian/);assert.equal(body.max_tokens,700);
+      assert.match(body.messages[0].content,/Indonesian/);assert.equal(body.max_tokens,2400);
       return {ok:true,json:async()=>({choices:[{finish_reason:'stop',message:{content:JSON.stringify({summary:'50 Hz band share is elevated. See E4.',evidenceIds:['E4'],findingIds:['hum'],uncertainty:'Root cause has not been established.'})}}],usage:{total_tokens:120}})};
     });assert.equal(result.status,'live');assert.equal(result.usage.total_tokens,120);
   }finally{if(saved===undefined)delete process.env.FIREWORKS_API_KEY;else process.env.FIREWORKS_API_KEY=saved;}

@@ -37,7 +37,7 @@ npm start
 
 There is no automatic .env loader. The application reads the process environment. For a public server, set `SIGNALPROOF_ACCESS_TOKEN` and enter that token in the UI. Local measurements need no token. Only loopback connections to the default loopback-bound server can request a model response without an owner token. This is a small owner-operated prototype, not a multi-user service.
 
-Each request uses temperature 0, a 700-output-token limit, JSON mode, a 25-second provider timeout, and no automatic retries. The server sends derived measurements, predefined findings, and limitations to Fireworks. It does not send raw samples or filenames to the model. The browser does send samples to the analysis server for recomputation when AI is requested. Do not expose the owner token to untrusted visitors.
+Each request uses temperature 0, a 2400-output-token limit, JSON mode, a 25-second provider timeout, and no automatic retries. The server sends derived measurements, predefined findings, and limitations to Fireworks. It does not send raw samples or filenames to the model. The browser does send samples to the analysis server for recomputation when AI is requested. Do not expose the owner token to untrusted visitors.
 
 The validator checks the JSON structure, required uncertainty, and references to real evidence/finding IDs. It does not prove that every model sentence is scientifically correct. The UI displays that limitation. Missing credentials, provider errors, and invalid output are explicit states. They do not generate a fake AI answer.
 
@@ -62,7 +62,7 @@ The thresholds are transparent prototype heuristics. This is not a calibrated in
 
 `npm test` checks analytic RMS, FFT frequency, fault flags, CSV handling, input limits, timing gaps, credential gating, provider-failure behavior, and model-response validation. Provider tests use explicit mocks. They are not evidence of a live Meta model call.
 
-`npm run evaluate` checks 15 synthetic scenarios across 200, 250, and 500 Hz sampling. The generated [evaluation report](docs/evaluation.json) records construction labels and exact flags. This evaluates deterministic flags, not real-world accuracy or AI answer quality. Hardware evaluation has not been performed.
+`npm run evaluate` checks 15 synthetic scenarios across 200, 250, and 500 Hz sampling. The generated [evaluation report](docs/evaluation.json) records construction labels and exact flags. This evaluates deterministic flags, not real-world accuracy or AI answer quality. Hardware evaluation has not been performed. 8 live synthetic calls (2026-10-29) are documented in docs/local_audit.md / docs/local_live_matrix.json — flat en reached 24.2s of the 25s timeout (see docs/status.json timeoutReview); monitor, do not assume all future reasoning will fit.
 
 ## Architecture
 
@@ -84,4 +84,4 @@ CSV / synthetic capture
 - [Fireworks structured outputs](https://docs.fireworks.ai/structured-responses/structured-response-formatting)
 - [Modal web functions](https://modal.com/docs/guide/webhooks)
 
-AI explanations are an implementation target until a live test is documented. See the status report supplied with the submission package for the current account and integration state.
+AI explanations: 8 synthetic live calls (healthy/clipping/gaps/flat x en/id) via Fireworks muse-spark-open verified 2026-10-29 — see docs/local_audit.md and docs/local_live_matrix.json. Hardware has not been tested; all evaluations remain synthetic.

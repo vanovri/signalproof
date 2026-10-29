@@ -1,15 +1,47 @@
 {
-  "asOf": "2026-10-28",
+  "asOf": "2026-10-29",
   "deterministicPrototype": "working",
-  "codeTests": {"passed":14,"total":14},
-  "syntheticScenarios": {"passed":15,"total":15},
-  "liveMetaInference": "blocked",
-  "blocker": "Fireworks rejected API key creation: account is suspended due to CREDIT_DEPLETED.",
-  "apiKeysCreatedByThisTask": 0,
-  "providerInferenceCallsByThisTask": 0,
-  "providerInferenceSpendByThisTaskUSD": 0,
-  "modalWorkloadsDeployed": false,
+  "codeTests": {
+    "passed": 14,
+    "total": 14
+  },
+  "syntheticScenarios": {
+    "passed": 15,
+    "total": 15
+  },
+  "liveSyntheticInference": {
+    "status": "verified",
+    "model": "accounts/fireworks/models/muse-spark-open",
+    "provider": "Fireworks",
+    "max_tokens": 2400,
+    "temperature": 0,
+    "timeout_ms": 25000,
+    "syntheticCases": 8,
+    "passed": 8,
+    "kinds": [
+      "healthy",
+      "clipping",
+      "gaps",
+      "flat"
+    ],
+    "languages": [
+      "en",
+      "id"
+    ],
+    "longestDuration_s": 24.2,
+    "note": "Live calls use synthetic demo() captures only. IDs validated and summaries audited against evidence numbers. Not hardware evaluation."
+  },
+  "timeoutReview": {
+    "limit_ms": 25000,
+    "longestObserved_ms": 24200,
+    "risk": "One response (flat en, reasoning 1688 tokens) reached 96.8% of timeout. Increase to 2400 tokens fixed truncation but not latency. If reasoning grows or network slows, timeout or incomplete output may recur. Mitigation: consider 30000 ms or shorter prompt if length recurs.",
+    "action": "Kept 25s for now to preserve previous behavior; monitor. No code change in this update."
+  },
   "realHardwareEvaluated": false,
-  "video": "Narrated three-minute walkthrough using actual application screenshots and synthetic captures. It explicitly states the live-inference limitation.",
-  "submission": "Prepared draft. Final acceptance and submission have not been performed."
+  "hardwareNote": "No hardware captures have been tested. All 15+8 cases are synthetic bench signals from engine.mjs. See docs/evaluation.json and docs/local_audit.md.",
+  "audit": "docs/local_audit.md and docs/local_live_matrix.json",
+  "previousBlocker": "2026-10-28 Fireworks CREDIT_DEPLETED blocked live inference - resolved via provided account; verified 2026-10-29",
+  "modalWorkloadsDeployed": false,
+  "video": "Walkthrough was recorded before successful live inference. It uses synthetic captures; the local live tests are documented separately.",
+  "submission": "Submission status has not been independently verified in the current update."
 }
