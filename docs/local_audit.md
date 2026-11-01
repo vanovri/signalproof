@@ -1,17 +1,17 @@
 # SignalProof — Audit Lokal Meta Muse Spark Open (Baseten & Fireworks)
-Tanggal: 2026-11-01T22:44:59.667148+00:00
+Tanggal: 2026-11-01T23:44:36.136583+00:00
 Model Teruji:
 1. **Baseten**: `meta-models/muse-spark-open-1026` — `max_tokens: 4096`, `temperature: 0`, `timeout: 25000 ms` (**10/10 lulus**: `healthy`, `hum`, `clipping`, `gaps`, `flat` × `en`/`id`, durasi `4.32s–9.465s`, rata-rata `6.06s`)
-2. **Fireworks**: `accounts/fireworks/models/muse-spark-open` — `max_tokens: 2400`, `temperature: 0`, `timeout: 25000 ms` (**8/8 lulus**: `healthy`, `clipping`, `gaps`, `flat` × `en`/`id`, durasi `16.804s–24.200s`, rata-rata `19.72s`)
+2. **Fireworks**: `accounts/fireworks/models/muse-spark-open` — `max_tokens: 4096`, `temperature: 0`, `timeout: 25000 ms` (**10/10 lulus**: `healthy`, `hum`, `clipping`, `gaps`, `flat` × `en`/`id`, durasi `14.193s–24.200s`, rata-rata `13.09s`)
 
 Uji menggunakan server lokal (`127.0.0.1:8789`). API key disimpan di environment proses server dan tidak pernah dicatat atau dikirim ke klien.
 
 > **Batas Evaluasi Jujur:** Semua hasil adalah sinyal bench sintetis dari `engine.mjs` `demo()`, bukan pengujian perangkat keras nyata (*no hardware captures tested*).
 
 ## Ringkasan Verifikasi
-- **Tes kode & keamanan (`npm test`)**: **15/15 lulus** (termasuk rute Fireworks, rute Baseten, pencegahan bypass token, dan validasi skema JSON/ID)
+- **Tes kode & keamanan (`npm test`)**: **16/16 lulus** (termasuk rute Fireworks, rute Baseten, uji jitter >2% / 0 gap, pencegahan bypass token, dan validasi skema JSON/ID)
 - **Evaluasi deterministik (`npm run evaluate`)**: **15/15 skenario sintetis lulus** (200 Hz, 250 Hz, 500 Hz)
-- **Uji live Meta Muse Spark Open**: **18/18 panggilan live tervalidasi** (10/10 via Baseten `meta-models/muse-spark-open-1026` + 8/8 via Fireworks `accounts/fireworks/models/muse-spark-open`)
+- **Uji live Meta Muse Spark Open**: **20/20 panggilan live tervalidasi** (10/10 via Baseten `meta-models/muse-spark-open-1026` + 10/10 via Fireworks `accounts/fireworks/models/muse-spark-open`)
 - **Validasi ID & Angka**: Semua `evidenceIds` dan `findingIds` merupakan subset valid dari laporan deterministik; setiap ringkasan diaudit terhadap angka `E1`–`E6` dan mencantumkan `uncertainty` eksplisit.
 
 ---
@@ -90,7 +90,7 @@ Uji menggunakan server lokal (`127.0.0.1:8789`). API key disimpan di environment
 
 ---
 
-## Bagian B — 8 Uji Live Fireworks (`accounts/fireworks/models/muse-spark-open`)
+## Bagian B — 10 Uji Live Fireworks (`accounts/fireworks/models/muse-spark-open`)
 
 ### healthy — en (Fireworks)
 - Findings: `['no-flags']` → findingIds `['no-flags']` — ✓ valid
@@ -105,6 +105,20 @@ Uji menggunakan server lokal (`127.0.0.1:8789`). API key disimpan di environment
 - Summary (884 char): Laporan sinyal bench tegangan rendah ini menunjukkan tidak ada flag kualitas sinyal yang terpicu (findingIds: ["no-flags"], severity: pass). Pengukuran yang dilaporkan: DC mean 1.65 V (E1), AC RMS 0.233 V (E2), sampel near-rail 0% (E3) di bawah ambang flag 1%, pangsa pita 48–52 Hz 1.02e-10% (E4) di bawah ambang 15% (metode FFT 512-titik Hann, resolusi 0.488 Hz), dan 0 celah waktu (E5) dengan jitte...
 - Uncertainty: Ketidakpastian tinggi: ambang batas bersifat heuristik dan flag tidak menetapkan akar penyebab; evaluasi sintetis tidak menetapkan performa pada perangkat keras nyata (limits). Tidak ada klaim kehilangan paket (E5) dan tidak ada validasi se...
 - Audit angka: DC mean 1.65 V (E1), AC RMS 0.233 V (E2), near-rail 0% (E3), 48–52 Hz share ~0% (E4), 0 gaps (E5) — cited accurately without claiming sensor validation.
+
+### hum — en (Fireworks)
+- Findings: `['hum']` → findingIds `['hum']` — ✓ valid
+- Evidence: E1=1.6500000000000012V, E2=0.45348649373492905V, E3=0%, E4=73.54548270557632%, E5=0gaps, E6=3.996s
+- Summary (886 char): This is a low-voltage bench-signal report (engineering prototype, not for medical diagnosis or hardware control). Measured DC mean is 1.65 V (E1) with AC RMS 0.453 V (E2) over a 3.996 s capture of 1000 samples at inferred 250 Hz (E6). No near-rail samples were observed (0% vs 1% flag threshold) (E3) and no observed timing gaps were detected (0 gaps, 0.000% jitter) (E5). One finding was flagged: 'S...
+- Uncertainty: Root cause is unknown. Raw data and personal identifiers were not provided; assessment is limited to the supplied summary statistics (E1-E6) and heuristic thresholds. No diagnosis, cause, or performance on real hardware can be established f...
+- Audit angka: 48–52 Hz band share 73.545% (>15% threshold, E4), AC RMS 0.453 V (E2), 0 gaps (E5) — cited accurately without claiming physical mains source.
+
+### hum — id (Fireworks)
+- Findings: `['hum']` → findingIds `['hum']` — ✓ valid
+- Evidence: E1=1.6500000000000012V, E2=0.45348649373492905V, E3=0%, E4=73.54548270557632%, E5=0gaps, E6=3.996s
+- Summary (831 char): Laporan ini adalah evaluasi prototipe rekayasa untuk sinyal bench tegangan rendah, bukan untuk diagnosis medis atau kontrol hardware. Hasil pengukuran yang dilaporkan: DC mean 1,65 V (E1), AC RMS 0,453 V (E2), sampel near-rail 0% (E3) di bawah ambang flag 1%, pangsa daya pita 48–52 Hz sebesar 73,55% (E4) yang melebihi ambang heuristik 15% sehingga memicu temuan 'Strong energy near 50 Hz' (hum) den...
+- Uncertainty: Penyebab utama (root cause) tidak diketahui. Evaluasi bersifat sintetis dan tidak menetapkan performa pada hardware nyata. Raw data dan personal identifiers tidak disediakan. Ketidakpastian mencakup keterbatasan metode FFT Hann-windowed 512...
+- Audit angka: 48–52 Hz band share 73.545% (>15% threshold, E4), AC RMS 0.453 V (E2), 0 gaps (E5) — cited accurately without claiming physical mains source.
 
 ### clipping — en (Fireworks)
 - Findings: `['clipping']` → findingIds `['clipping']` — ✓ valid
@@ -152,10 +166,10 @@ Uji menggunakan server lokal (`127.0.0.1:8789`). API key disimpan di environment
 
 ## Perbandingan Teknis Partner (Baseten vs Fireworks) & Batasan
 1. **Latensi & Token Reasoning**:
-   - Di **Fireworks (`accounts/fireworks/models/muse-spark-open`)**, model membutuhkan `1.042–1.688` token reasoning sehingga batas awal `700`/`1.024` token terpotong (`finish_reason: length`) dan baru stabil setelah dinaikkan ke `2.400` token, dengan durasi `16,8–24,2 detik` (mendekati batas timeout 25 detik).
-   - Di **Baseten (`meta-models/muse-spark-open-1026`)**, *speculative decoding* (`accepted_prediction_tokens`) menghasilkan `1.956–3.390` total token (`1.090–2.477` token reasoning) hanya dalam **`4,32–9,47 detik` (rata-rata `6,06 detik`)** dengan `max_tokens: 4096`, memangkas latensi lebih dari **3× lebih cepat** dan menghilangkan risiko *timeout* 25 detik.
+   - Di **Fireworks (`accounts/fireworks/models/muse-spark-open`)**, model membutuhkan `952–1.688` token reasoning dan menyelesaikan seluruh **10/10** skenario (`healthy`, `hum`, `clipping`, `gaps`, `flat` × `en`/`id`) dalam `14,19–24,20 detik`.
+   - Di **Baseten (`meta-models/muse-spark-open-1026`)**, *speculative decoding* (`accepted_prediction_tokens`) menghasilkan `1.956–3.390` total token (`1.090–2.477` token reasoning) dalam **`4,32–9,47 detik` (rata-rata `6,06 detik`)** pada seluruh **10/10** skenario.
 2. **Sintetis vs Hardware**:
-   - Seluruh 15 skenario deterministik dan 18 panggilan live menggunakan sinyal sintetis dari `engine.mjs`. Belum ada rekaman perangkat keras nyata (*real hardware captures*) yang diuji.
+   - Seluruh 15 skenario deterministik dan 20 panggilan live menggunakan sinyal sintetis dari `engine.mjs`. Belum ada rekaman perangkat keras nyata (*real hardware captures*) yang diuji.
 3. **File Bukti Publik**:
-   - `docs/local_live_matrix.json` — matriks 18 panggilan live beserta telemetri token dan durasi
+   - `docs/local_live_matrix.json` — matriks 20 panggilan live beserta telemetri token dan durasi
    - `docs/verified_live_responses.json` — respons terverifikasi 10 skenario (`healthy`, `hum`, `clipping`, `gaps`, `flat` × `en`/`id`) untuk *audit replay* transparan di GitHub Pages statis

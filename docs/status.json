@@ -2,8 +2,8 @@
   "asOf": "2026-11-02",
   "deterministicPrototype": "working",
   "codeTests": {
-    "passed": 15,
-    "total": 15
+    "passed": 16,
+    "total": 16
   },
   "syntheticScenarios": {
     "passed": 15,
@@ -11,8 +11,8 @@
   },
   "liveSyntheticInference": {
     "status": "verified",
-    "totalLiveCallsPassed": 18,
-    "totalLiveCallsRun": 18,
+    "totalLiveCallsPassed": 20,
+    "totalLiveCallsRun": 20,
     "providers": [
       {
         "provider": "Baseten",
@@ -40,13 +40,14 @@
       {
         "provider": "Fireworks",
         "model": "accounts/fireworks/models/muse-spark-open",
-        "max_tokens": 2400,
+        "max_tokens": 4096,
         "temperature": 0,
         "timeout_ms": 25000,
-        "syntheticCases": 8,
-        "passed": 8,
+        "syntheticCases": 10,
+        "passed": 10,
         "kinds": [
           "healthy",
+          "hum",
           "clipping",
           "gaps",
           "flat"
@@ -57,7 +58,7 @@
         ],
         "minDuration_s": 4.32,
         "maxDuration_s": 24.2,
-        "meanDuration_s": 12.13
+        "meanDuration_s": 13.087
       }
     ],
     "note": "Live calls use synthetic demo() captures only. IDs validated and summaries audited against evidence numbers E1–E6. Static GitHub Pages includes transparent recorded-live audit replay for the 5 built-in presets; custom CSVs require the local/hosted server."
@@ -69,7 +70,7 @@
     "mitigation": "Dual-provider support (Baseten meta-models/muse-spark-open-1026 + Fireworks accounts/fireworks/models/muse-spark-open) with max_tokens=4096 and concise reasoning prompt reduced peak latency from 24.2s on Fireworks to 9.47s (mean 6.06s) on Baseten."
   },
   "realHardwareEvaluated": false,
-  "hardwareNote": "No hardware captures have been tested. All 15 deterministic scenarios and 18 live model calls use synthetic bench signals from engine.mjs. See docs/evaluation.json and docs/local_audit.md.",
+  "hardwareNote": "No hardware captures have been tested. All 15 deterministic scenarios and 20 live model calls use synthetic bench signals from engine.mjs. See docs/evaluation.json and docs/local_audit.md.",
   "audit": "docs/local_audit.md, docs/local_live_matrix.json, and docs/verified_live_responses.json",
   "modalWorkloadsDeployed": false,
   "video": "Narrated three-minute walkthrough updated to include verified live Meta Muse Spark Open output on synthetic captures alongside deterministic checks."
