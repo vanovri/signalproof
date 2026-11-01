@@ -1,9 +1,9 @@
 {
-  "asOf": "2026-10-29",
+  "asOf": "2026-11-02",
   "deterministicPrototype": "working",
   "codeTests": {
-    "passed": 14,
-    "total": 14
+    "passed": 15,
+    "total": 15
   },
   "syntheticScenarios": {
     "passed": 15,
@@ -11,37 +11,66 @@
   },
   "liveSyntheticInference": {
     "status": "verified",
-    "model": "accounts/fireworks/models/muse-spark-open",
-    "provider": "Fireworks",
-    "max_tokens": 2400,
-    "temperature": 0,
-    "timeout_ms": 25000,
-    "syntheticCases": 8,
-    "passed": 8,
-    "kinds": [
-      "healthy",
-      "clipping",
-      "gaps",
-      "flat"
+    "totalLiveCallsPassed": 18,
+    "totalLiveCallsRun": 18,
+    "providers": [
+      {
+        "provider": "Baseten",
+        "model": "meta-models/muse-spark-open-1026",
+        "max_tokens": 4096,
+        "temperature": 0,
+        "timeout_ms": 25000,
+        "syntheticCases": 10,
+        "passed": 10,
+        "kinds": [
+          "healthy",
+          "hum",
+          "clipping",
+          "gaps",
+          "flat"
+        ],
+        "languages": [
+          "en",
+          "id"
+        ],
+        "minDuration_s": 4.32,
+        "maxDuration_s": 9.465,
+        "meanDuration_s": 6.06
+      },
+      {
+        "provider": "Fireworks",
+        "model": "accounts/fireworks/models/muse-spark-open",
+        "max_tokens": 2400,
+        "temperature": 0,
+        "timeout_ms": 25000,
+        "syntheticCases": 8,
+        "passed": 8,
+        "kinds": [
+          "healthy",
+          "clipping",
+          "gaps",
+          "flat"
+        ],
+        "languages": [
+          "en",
+          "id"
+        ],
+        "minDuration_s": 4.32,
+        "maxDuration_s": 24.2,
+        "meanDuration_s": 12.13
+      }
     ],
-    "languages": [
-      "en",
-      "id"
-    ],
-    "longestDuration_s": 24.2,
-    "note": "Live calls use synthetic demo() captures only. IDs validated and summaries audited against evidence numbers. Not hardware evaluation."
+    "note": "Live calls use synthetic demo() captures only. IDs validated and summaries audited against evidence numbers E1–E6. Static GitHub Pages includes transparent recorded-live audit replay for the 5 built-in presets; custom CSVs require the local/hosted server."
   },
   "timeoutReview": {
     "limit_ms": 25000,
-    "longestObserved_ms": 24200,
-    "risk": "One response (flat en, reasoning 1688 tokens) reached 96.8% of timeout. Increase to 2400 tokens fixed truncation but not latency. If reasoning grows or network slows, timeout or incomplete output may recur. Mitigation: consider 30000 ms or shorter prompt if length recurs.",
-    "action": "Kept 25s for now to preserve previous behavior; monitor. No code change in this update."
+    "fireworksLongestObserved_ms": 24200,
+    "basetenLongestObserved_ms": 9465,
+    "mitigation": "Dual-provider support (Baseten meta-models/muse-spark-open-1026 + Fireworks accounts/fireworks/models/muse-spark-open) with max_tokens=4096 and concise reasoning prompt reduced peak latency from 24.2s on Fireworks to 9.47s (mean 6.06s) on Baseten."
   },
   "realHardwareEvaluated": false,
-  "hardwareNote": "No hardware captures have been tested. All 15+8 cases are synthetic bench signals from engine.mjs. See docs/evaluation.json and docs/local_audit.md.",
-  "audit": "docs/local_audit.md and docs/local_live_matrix.json",
-  "previousBlocker": "2026-10-28 Fireworks CREDIT_DEPLETED blocked live inference - resolved via provided account; verified 2026-10-29",
+  "hardwareNote": "No hardware captures have been tested. All 15 deterministic scenarios and 18 live model calls use synthetic bench signals from engine.mjs. See docs/evaluation.json and docs/local_audit.md.",
+  "audit": "docs/local_audit.md, docs/local_live_matrix.json, and docs/verified_live_responses.json",
   "modalWorkloadsDeployed": false,
-  "video": "Walkthrough was recorded before successful live inference. It uses synthetic captures; the local live tests are documented separately.",
-  "submission": "Submission status has not been independently verified in the current update."
+  "video": "Narrated three-minute walkthrough updated to include verified live Meta Muse Spark Open output on synthetic captures alongside deterministic checks."
 }

@@ -1,7 +1,7 @@
 WEBVTT
 
 00:00.000 --> 00:30.000
-This is SignalProof, a low-voltage bench-signal prototype for the Meta Global AI Developer Hackathon. A convincing waveform does not guarantee a trustworthy capture. SignalProof calculates measurements first, then offers an optional Meta Llama explanation. This walkthrough uses actual application screenshots and synthetic data. It does not claim real hardware validation.
+This is SignalProof, a low-voltage bench-signal workbench for the Meta Global AI Developer Hackathon. A convincing waveform does not guarantee a trustworthy capture. SignalProof calculates deterministic measurements first, then offers an evidence-gated Meta Muse Spark Open explanation. This walkthrough uses actual application screenshots and synthetic bench data.
 
 00:30.000 --> 01:00.000
 Start with the reference capture. Two known tones produce an AC RMS of approximately zero point two three three volts. The near-rail percentage is zero. The configured checks find no signal-quality flags. That does not prove the sensor works. The evidence ledger records how every displayed value was calculated.
@@ -16,4 +16,5 @@ The clipping example loses waveform peaks at the declared ADC rails. SignalProof
 The missing-samples example contains a deliberate timestamp gap. The application reports the observed timing problem and withholds the spectrum. It does not interpolate missing samples or turn irregular timestamps into a precise-looking frequency claim. This distinction keeps an attractive chart from hiding a capture problem. Timing gaps do not prove packet loss.
 
 02:30.000 --> 03:00.000
-The Meta Llama adapter sends derived measurements and fixed findings through Fireworks, with JSON and reference validation. A live model test is currently blocked because the Fireworks account reports credit depleted. No AI answer is fabricated. Fourteen code tests and fifteen synthetic scenarios pass. The next milestone is live Meta inference and a real bench evaluation.
+When an explanation is requested, the server sends only derived measurements and fixed findings to Meta Muse Spark Open on Baseten or Fireworks, with strict JSON and reference validation. All eighteen live synthetic calls across English and Indonesian pass, alongside fifteen unit tests and fifteen synthetic scenarios. Real hardware captures remain the next step.
+

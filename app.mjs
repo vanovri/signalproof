@@ -1,11 +1,23 @@
 import {analyze,demo,parseCSV,toCSV} from './engine.mjs';
 const $=id=>document.getElementById(id);
-let rows=demo('hum'), report, name='Synthetic / 50 Hz interference', revision=0;
+let rows=demo('hum'), report, name='Synthetic / 50 Hz interference', currentKind='hum', revision=0;
 const fmt=v=>v===null?'Unavailable':Number(v).toLocaleString('en-US',{maximumFractionDigits:3});
 function element(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
 function error(message){$('message').textContent=message;$('message').hidden=false;}
 function clearAI(){revision++;$('ai-result').replaceChildren();$('ai-status').textContent='Not requested. Measurements work without AI.';}
 function save(filename,text,type){const url=URL.createObjectURL(new Blob([text],{type}));const a=element('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function renderExplanation(e) {
+  $('ai-result').replaceChildren(element('p',e.summary));
+  const refs=element('p');
+  e.evidenceIds.forEach(id=>{const a=element('a',id,'evidence-link');a.href=`#${id}`;a.addEventListener('click',()=>{$(id).open=true;});refs.append(a);});
+  $('ai-result').append(refs);
+  if(e.usage?.total_tokens){
+    const rTok=e.usage.completion_tokens_details?.reasoning_tokens??e.usage.output_tokens_details?.reasoning_tokens;
+    const dur=e.duration_s?` · ${e.duration_s}s`:'';
+    $('ai-result').append(element('p',`Telemetry: ${e.usage.total_tokens} total tokens${rTok?` (${rTok} reasoning tokens)`:''}${dur}`,'uncertainty'));
+  }
+  $('ai-result').append(element('p',e.uncertainty,'uncertainty'),element('p',e.notice,'uncertainty'));
+}
 function plot(canvas,points,{spectral=false,empty=false}={}) {
   const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
   canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);
@@ -42,12 +54,12 @@ function run(){
   }catch(e){error(e.message);}
 }
 document.querySelectorAll('[data-demo]').forEach(b=>b.addEventListener('click',()=>{
-  rows=demo(b.dataset.demo);name=`Synthetic / ${b.firstChild.textContent}`;$('railMin').value='0';$('railMax').value='3.3';$('file').value='';
+  currentKind=b.dataset.demo;rows=demo(currentKind);name=`Synthetic / ${b.firstChild.textContent}`;$('railMin').value='0';$('railMax').value='3.3';$('file').value='';
   document.querySelectorAll('[data-demo]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));run();
 }));
 $('file').addEventListener('change',async()=>{
   const file=$('file').files[0];if(!file)return;
-  try{if(file.size>2_000_000)throw Error('CSV exceeds 2 MB.');const parsed=parseCSV(await file.text());analyze(parsed,{railMin:Number($('railMin').value),railMax:Number($('railMax').value)});rows=parsed;name=`Your capture / ${file.name}`;document.querySelectorAll('[data-demo]').forEach(x=>x.setAttribute('aria-pressed','false'));run();}catch(e){error(e.message);}
+  try{if(file.size>2_000_000)throw Error('CSV exceeds 2 MB.');const parsed=parseCSV(await file.text());analyze(parsed,{railMin:Number($('railMin').value),railMax:Number($('railMax').value)});currentKind=null;rows=parsed;name=`Your capture / ${file.name}`;document.querySelectorAll('[data-demo]').forEach(x=>x.setAttribute('aria-pressed','false'));run();}catch(e){error(e.message);}
 });
 $('analyze').addEventListener('click',run);
 ['railMin','railMax'].forEach(id=>$(id).addEventListener('input',()=>{clearAI();$('ai-status').textContent='ADC range changed. Recalculate before requesting an explanation.';}));
@@ -55,16 +67,28 @@ $('downloadCSV').addEventListener('click',()=>save('signalproof-capture.csv',toC
 $('export').addEventListener('click',()=>save('signalproof-report.json',JSON.stringify({...report,explanationStatus:$('ai-status').textContent},null,2),'application/json'));
 $('explain').addEventListener('click',async()=>{
   if(!$('railMin').value.trim()||!$('railMax').value.trim()||Number($('railMin').value)!==report.railMin||Number($('railMax').value)!==report.railMax){error('Recalculate after changing ADC rails.');return;}
-  const current=revision;const button=$('explain');button.disabled=true;$('ai-result').replaceChildren();$('ai-status').textContent='Sending samples to this server for recomputation. Only derived measurements go to Fireworks.';
+  const current=revision;const button=$('explain');button.disabled=true;$('ai-result').replaceChildren();$('ai-status').textContent='Sending samples to this server for recomputation. Only derived measurements go to Meta Muse Spark Open.';
   try{
-    const token=$('access').value,headers={'Content-Type':'application/json'};if(token)headers.Authorization=`Bearer ${token}`;
-    const response=await fetch('/api/analyze',{method:'POST',headers,signal:AbortSignal.timeout(30000),body:JSON.stringify({rows,options:{railMin:report.railMin,railMax:report.railMax},explain:true,language:$('language').value})});
-    if(!response.ok){let message='AI needs the local SignalProof server. Run npm start, then open localhost:8789.';if(response.status===403)message='Enter the owner access token for this hosted server.';throw Error(message);}
-    const result=await response.json();if(current!==revision)return;const e=result.explanation;
-    $('ai-status').textContent=e.status==='live'?`Live response / ${e.model}`:e.message||e.status;
-    if(e.status==='live'){
-      $('ai-result').append(element('p',e.summary));const refs=element('p');e.evidenceIds.forEach(id=>{const a=element('a',id,'evidence-link');a.href=`#${id}`;a.addEventListener('click',()=>{$(id).open=true;});refs.append(a);});$('ai-result').append(refs,element('p',e.uncertainty,'uncertainty'),element('p',e.notice,'uncertainty'));
+    const lang=$('language').value,token=$('access').value,headers={'Content-Type':'application/json'};if(token)headers.Authorization=`Bearer ${token}`;
+    const response=await fetch('/api/analyze',{method:'POST',headers,signal:AbortSignal.timeout(30000),body:JSON.stringify({rows,options:{railMin:report.railMin,railMax:report.railMax},explain:true,language:lang})});
+    if(!response.ok){
+      if(response.status!==403&&currentKind&&report.railMin===0&&report.railMax===3.3){
+        const fallbackRes=await fetch('./docs/verified_live_responses.json',{cache:'no-store'});
+        if(fallbackRes.ok){
+          const fallbackMap=await fallbackRes.json();
+          const rec=fallbackMap[`${currentKind}:${lang}`];
+          if(rec&&current===revision){
+            $('ai-status').textContent=`Verified recorded live response (local server audit · ${rec.provider} ${rec.model})`;
+            renderExplanation(rec);
+            return;
+          }
+        }
+      }
+      let message='Live custom CSV AI needs the local SignalProof server. Run npm start, then open localhost:8789.';if(response.status===403)message='Enter the owner access token for this hosted server.';throw Error(message);
     }
+    const result=await response.json();if(current!==revision)return;const e=result.explanation;
+    $('ai-status').textContent=e.status==='live'?`Live response / ${e.provider||'Meta'} · ${e.model}`:e.message||e.status;
+    if(e.status==='live')renderExplanation(e);
   }catch(e){if(current===revision)$('ai-status').textContent=e.name==='TimeoutError'?'AI request timed out. Measurements remain available.':e.message;}finally{button.disabled=false;}
 });
 window.addEventListener('resize',draw);run();

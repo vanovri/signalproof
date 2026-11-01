@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {analyze,demo,parseCSV,toCSV,spectrum,LIMIT} from '../engine.mjs';
-import {validateExplanation,handle,explain} from '../api/analyze.mjs';
+import {validateExplanation,handle,explain,resolveProvider} from '../api/analyze.mjs';
 test('healthy reference: analytic RMS and no configured flags',()=>{
   const r=analyze(demo('healthy'));
   assert.deepEqual(r.findings.map(f=>f.id),['no-flags']);
@@ -62,21 +62,42 @@ test('bad body and invalid language produce controlled validation errors',async(
   assert.equal((await handle({rows:demo(),language:'invalid'})).code,400);
 });
 test('unconfigured model is explicitly reported without a network call',async()=>{
-  const saved=process.env.FIREWORKS_API_KEY;delete process.env.FIREWORKS_API_KEY;
+  const savedFw=process.env.FIREWORKS_API_KEY,savedBt=process.env.BASETEN_API_KEY;
+  delete process.env.FIREWORKS_API_KEY;delete process.env.BASETEN_API_KEY;
   try{assert.equal((await explain(analyze(demo()),'en',()=>{throw Error('Unexpected network');})).status,'unconfigured');}
-  finally{if(saved!==undefined)process.env.FIREWORKS_API_KEY=saved;}
+  finally{if(savedFw!==undefined)process.env.FIREWORKS_API_KEY=savedFw;if(savedBt!==undefined)process.env.BASETEN_API_KEY=savedBt;}
 });
 test('mocked provider response uses measurement-only context, not raw samples',async()=>{
-  const saved=process.env.FIREWORKS_API_KEY;process.env.FIREWORKS_API_KEY='test-not-a-real-key';
+  const savedFw=process.env.FIREWORKS_API_KEY,savedBt=process.env.BASETEN_API_KEY;
+  process.env.FIREWORKS_API_KEY='test-not-a-real-key';delete process.env.BASETEN_API_KEY;
   try{
     const report=analyze(demo('hum'));
     const result=await explain(report,'id',async(url,options)=>{
       assert.equal(url,'https://api.fireworks.ai/inference/v1/chat/completions');const body=JSON.parse(options.body);
       const context=JSON.parse(body.messages[1].content);assert.equal(context.rows,undefined);assert.equal(context.spectrum,undefined);
-      assert.match(body.messages[0].content,/Indonesian/);assert.equal(body.max_tokens,2400);
+      assert.match(body.messages[0].content,/Indonesian/);assert.equal(body.max_tokens,4096);
       return {ok:true,json:async()=>({choices:[{finish_reason:'stop',message:{content:JSON.stringify({summary:'50 Hz band share is elevated. See E4.',evidenceIds:['E4'],findingIds:['hum'],uncertainty:'Root cause has not been established.'})}}],usage:{total_tokens:120}})};
-    });assert.equal(result.status,'live');assert.equal(result.usage.total_tokens,120);
-  }finally{if(saved===undefined)delete process.env.FIREWORKS_API_KEY;else process.env.FIREWORKS_API_KEY=saved;}
+    });assert.equal(result.status,'live');assert.equal(result.provider,'Fireworks');assert.equal(result.usage.total_tokens,120);
+  }finally{if(savedFw===undefined)delete process.env.FIREWORKS_API_KEY;else process.env.FIREWORKS_API_KEY=savedFw;if(savedBt!==undefined)process.env.BASETEN_API_KEY=savedBt;}
+});
+test('Baseten provider route defaults to meta-models/muse-spark-open-1026 and strips markdown fences',async()=>{
+  const savedFw=process.env.FIREWORKS_API_KEY,savedBt=process.env.BASETEN_API_KEY,savedBm=process.env.BASETEN_MODEL;
+  delete process.env.FIREWORKS_API_KEY;process.env.BASETEN_API_KEY='test-baseten-key';delete process.env.BASETEN_MODEL;
+  try{
+    assert.equal(resolveProvider().provider,'Baseten');
+    assert.equal(resolveProvider().model,'meta-models/muse-spark-open-1026');
+    const report=analyze(demo('hum'));
+    const result=await explain(report,'en',async(url,options)=>{
+      assert.equal(url,'https://inference.baseten.co/v1/chat/completions');
+      const body=JSON.parse(options.body);assert.equal(body.model,'meta-models/muse-spark-open-1026');
+      return {ok:true,json:async()=>({choices:[{finish_reason:'stop',message:{content:'```json\n{"summary":"Elevated 48-52 Hz share (E4).","evidenceIds":["E4"],"findingIds":["hum"],"uncertainty":"Root cause is unknown."}\n```'}}],usage:{total_tokens:210}})};
+    });
+    assert.equal(result.status,'live');assert.equal(result.provider,'Baseten');assert.equal(result.model,'meta-models/muse-spark-open-1026');
+  }finally{
+    if(savedFw!==undefined)process.env.FIREWORKS_API_KEY=savedFw;
+    if(savedBt===undefined)delete process.env.BASETEN_API_KEY;else process.env.BASETEN_API_KEY=savedBt;
+    if(savedBm!==undefined)process.env.BASETEN_MODEL=savedBm;
+  }
 });
 test('provider errors and malformed output do not replace measurements',async()=>{
   const saved=process.env.FIREWORKS_API_KEY;process.env.FIREWORKS_API_KEY='test-not-a-real-key';
