@@ -1,66 +1,80 @@
-# SignalProof — Evidence-Linked Low-Voltage Signal Quality Workbench
+# SignalProof: measure before you explain
 
-Live workbench: https://vanovri.github.io/signalproof/  
-Three-minute narrated demo: https://vanovri.github.io/signalproof/docs/demo.html  
-Evaluation report: [`docs/evaluation.json`](docs/evaluation.json) · 520-Call Live Stress Benchmark: [`docs/stress_benchmark.md`](docs/stress_benchmark.md) ([`JSON`](docs/stress_benchmark.json)) · Provider Telemetry Analysis: [`docs/provider_telemetry_analysis.md`](docs/provider_telemetry_analysis.md) · DSP Math Proof: [`docs/dsp_math_verification.md`](docs/dsp_math_verification.md) · Live audit: [`docs/local_audit.md`](docs/local_audit.md) · Status: [`docs/status.json`](docs/status.json)
+An evidence-linked workbench for low-voltage electronics captures. Inspect a CSV, identify capture-quality flags, compare a new recording, and ask Meta Muse Spark Open to explain the measured evidence in English or Indonesian.
 
-SignalProof is an evidence-first signal quality workbench for electronics engineering labs. It checks low-voltage time-series captures (`time_s,value`, default `0.0–3.3 V` bench range) for common measurement faults **before** generating an optional bilingual (`en` / `id`) explanation with **Meta Muse Spark Open** (`meta-models/muse-spark-open-1026` on Baseten or `accounts/fireworks/models/muse-spark-open` on Fireworks).
+[Open workbench](https://vanovri.github.io/signalproof/) · [Three-minute narrated walkthrough](https://vanovri.github.io/signalproof/docs/demo.html) · [Judge guide](docs/JUDGE_GUIDE.md) · [Corrected benchmark audit](docs/provider_telemetry_analysis.md)
 
-All deterministic measurements run in the browser with zero third-party runtime dependencies. When a live explanation is requested on the local/hosted server, only the compact derived evidence ledger (`E1`–`E6`) and fixed finding IDs are sent to the model — raw CSV samples and filenames never leave the server, and a strict post-generation validator rejects any response that cites unknown IDs or omits uncertainty bounds. On static GitHub Pages (`https://vanovri.github.io/signalproof/`), clicking **Explain with Meta Muse Spark Open** transparently replays the verified recorded live responses from [`docs/verified_live_responses.json`](docs/verified_live_responses.json) for the 5 built-in presets at default `0–3.3 V` rails (clearly labeled as recorded live audit responses).
+## A concrete workflow
 
----
+An electronics student sees a plausible waveform. Is there strong 50 Hz energy? Did the capture approach its ADC rails? Can the timestamps support a spectrum?
 
-## Core Architecture: Measure First, Explain Second
+1. Open **50 Hz interference**. Follow the hum finding to E4, about 73.545% band power.
+2. Click **Pin current capture**, then **Reference signal**. Compare AC RMS, near-rail percentage, and band share. The band-share change is about -73.545 percentage points. These are two synthetic examples, not proof of a hardware repair.
+3. Open **Missing samples**. E5 records one timing gap. E4 becomes unavailable and no spectrum is shown.
+4. Choose **Recorded example** and view a saved Meta response in either language. The page labels its date and provider and states that no new inference occurs.
+5. Export the report. It includes measurements, source type, the currently displayed explanation, and the pinned comparison. It never includes the owner access token.
 
-1. **Deterministic Signal Quality Engine ([`engine.mjs`](engine.mjs))**:
-   - **E1 — Mean (DC offset)**: Average voltage across all samples.
-   - **E2 — AC RMS**: Root-mean-square amplitude after DC removal.
-   - **E3 — Near-rail samples**: Share of samples within `2%` of the configured lower/upper rail (flags `clipping` at `>= 1%`).
-   - **E4 — 48–52 Hz band share**: Fraction of AC spectral power in the `48–52 Hz` mains hum band using radix-2 FFT with Hann window on the largest power-of-two block (flags `hum` at `>= 15%`).
-   - **E5 — Timing regularity**: Median sample interval, estimated sample rate, skipped-sample gaps (`dt > 1.5 × median`), and normalized MAD jitter (flags `timing` if `gaps > 0` or `jitter > 2%`).
-   - **E6 — Usable duration**: Total capture span (`>= 1.0 s` and `>= 120 Hz` required for `1 Hz` bin resolution around `50 Hz`).
-2. **Withheld-Spectrum Guardrail**:
-   - If timestamp gaps exist (`gaps > 0`), jitter exceeds `2%`, duration is `< 1.0 s`, or sample rate is `< 120 Hz`, `E4` is set to `null` and the FFT spectrum is **withheld** (`spectrum-unavailable`) instead of rendering a misleading spectrum.
-3. **Evidence-Gated Meta Muse Spark Open Reasoning ([`api/analyze.mjs`](api/analyze.mjs))**:
-   - Supports **Baseten** (`https://inference.baseten.co/v1/chat/completions`, default `meta-models/muse-spark-open-1026`) and **Fireworks** (`https://api.fireworks.ai/inference/v1/chat/completions`, default `accounts/fireworks/models/muse-spark-open`).
-   - Recomputes the deterministic report server-side, prompts `Muse Spark Open` at `temperature: 0` (`max_tokens: 4096`, `response_format: { type: "json_object" }`), strips markdown fences if present, and validates that every returned `evidenceIds[]` and `findingIds[]` entry exists in the deterministic report.
+The deterministic engine supplies the measurements and suggested next bench checks. Meta provides an optional bilingual explanation. It does not calculate the FFT, classify faults independently, or control hardware. This separation makes the numbers reproducible and keeps an AI failure from changing measurements. Human usefulness and time savings have not been measured.
 
----
+## What runs where
 
-## Verification & Honest Boundaries
+| Component | Responsibility |
+| --- | --- |
+| `engine.mjs` | Browser/local CSV validation, timing checks, AC RMS, rail proximity, Hann-windowed radix-2 FFT, heuristic findings |
+| `comparison.mjs` | Measurement deltas with matching rails, sample rate, and sample count. Unavailable values stay unavailable. |
+| `app.mjs` | Charts, evidence links, reference capture, explicit recorded/live mode, JSON export |
+| `api/analyze.mjs` | Recompute on server; send only E1-E6, fixed findings, and limits to Muse; validate response schema and ID references |
+| `server.mjs` | Loopback server, body-size limit, origin check, static-file allowlist, server-side API keys |
+| `cli.mjs` | Terminal inspector for CSVs and synthetic presets |
 
-| Verification Suite | Command / Artifact | Result | Scope & Honesty Note |
-| :--- | :--- | :--- | :--- |
-| **Unit, DSP & Security Red-Team Tests** | `npm test` ([`tests/engine.test.mjs`](tests/engine.test.mjs), [`tests/security_redteam.test.mjs`](tests/security_redteam.test.mjs)) | **38 / 38 passed** | Tests CSV formula/DDE injection rejection, `E1`–`E6` math, off-bin Hann leakage, withheld-spectrum rules (gaps, jitter > 2%, sub-120 Hz, < 1.0 s), Host/Origin spoofing, CLI (`cli.mjs`), and Baseten/Fireworks `Muse Spark Open` validator. |
-| **Synthetic Evaluation Matrix** | `npm run evaluate` ([`docs/evaluation.json`](docs/evaluation.json)) | **15 / 15 passed** | 5 signal classes (`healthy`, `hum`, `clipping`, `gaps`, `flat`) × 3 sample rates (`200`, `250`, `500 Hz`). Synthetic bench signals only (`0–3.3 V`). |
-| **Live Meta Muse Spark Open Benchmark (Baseten)** | [`docs/stress_benchmark.md`](docs/stress_benchmark.md) · [`docs/provider_telemetry_analysis.md`](docs/provider_telemetry_analysis.md) · [`docs/verified_live_responses.json`](docs/verified_live_responses.json) | **410 / 410 passed** (`1,091,580` tokens) | `meta-models/muse-spark-open-1026` across 205 synthetic signal scenarios × `en` & `id` (`699,194` reasoning tokens, `619,532` accepted speculative tokens, mean latency `6.90s`). Plus `35.70M` tokens burned across 13 autonomous Cline coding & auditing runs on Baseten. |
-| **Live Meta Muse Spark Open Benchmark (Fireworks)** | [`docs/stress_benchmark.md`](docs/stress_benchmark.md) · [`docs/stress_benchmark.json`](docs/stress_benchmark.json) · [`docs/local_live_matrix.json`](docs/local_live_matrix.json) | **110 / 110 passed** (`224,255` tokens) | `accounts/fireworks/models/muse-spark-open` across 55 synthetic signal scenarios × `en` & `id` (`121,035` reasoning tokens, mean latency `13.83s`). |
+Static GitHub Pages provides browser analysis and recorded examples. Live custom-CSV explanations require the Node server and a server-side API key. A live request sends CSV samples to that server for recomputation. Only derived evidence and findings go from the server to the model. Explanations can still contain incorrect prose despite valid references.
 
-### Explicit Scope Limits
-- **Synthetic captures only (`hardwareEvaluated: false`)**: All 15 deterministic evaluation scenarios, 38 unit/red-team tests, and all **520 verified live `Meta Muse Spark Open` calls (`1,315,835` total benchmark tokens, `820,229` reasoning tokens)** use synthetic bench signals generated by `engine.mjs`. Real oscilloscope, ADC, or sensor captures have not been benchmarked.
-- **Not a medical or safety-critical device**: SignalProof is for low-voltage teaching/bench inspection (`0–3.3 V`) and does not diagnose hardware root causes or medical conditions.
-- **Modal recipe (`modal_app.py`)**: Included as an optional serverless deployment recipe; no Modal workloads are deployed in the public demo (`modalWorkloadsDeployed: false`).
+Muse Spark Open model IDs: `meta-models/muse-spark-open-1026` on Baseten and `accounts/fireworks/models/muse-spark-open` on Fireworks. Fireworks takes precedence if both API keys are configured. Public server deployments require `SIGNALPROOF_ACCESS_TOKEN` before spending inference credits.
 
----
+## Reproduce locally
 
-## Quick Start (Web Workbench & CLI Inspector)
+Requires Node.js 22.9+ for optional `.env` loading. There are no third-party runtime packages to install.
 
-Requires **Node.js 20+** (zero `npm install` packages required):
-
-```bash
+```sh
 git clone https://github.com/vanovri/signalproof.git
 cd signalproof
-cp .env.example .env
-# Add BASETEN_API_KEY (recommended, ~6.9s latency) or FIREWORKS_API_KEY to .env
+# Optional: copy .env.example to .env and configure one provider key.
 npm test
 npm run evaluate
+npm run audit:benchmarks
 npm start
 ```
 
-Open `http://127.0.0.1:8789` in your browser, or run the zero-dependency CLI inspector directly from the terminal:
+Open `http://127.0.0.1:8789`. `npm start` loads `.env` if present. Existing environment variables take precedence.
 
-```bash
+```sh
 node cli.mjs --demo hum
 node cli.mjs --demo gaps
-node cli.mjs --demo hum --explain --lang id
+node cli.mjs --file samples/hum.csv --json
+# Explicit env loading for a live CLI request:
+node --env-file=.env cli.mjs --demo hum --explain --lang id
 ```
+
+## Measurements and limits
+
+- E1: arithmetic DC mean, volts.
+- E2: RMS deviation from the DC mean, volts.
+- E3: percentage of samples within 0.5% of either declared ADC rail. Flag threshold: at least 1% of samples. Proximity does not prove physical clipping.
+- E4: 48-52 Hz power divided by power from 5 Hz to min(200 Hz, Nyquist), using a Hann-windowed FFT. Flag threshold: at least 15%. This checks the configured 50 Hz band, not every noise source.
+- E5: count of timestamp intervals greater than 1.5 times the median interval. Relative RMS jitter excludes those gaps. It does not identify packet loss.
+- E6: total time span. The sample rate comes from median timestamp spacing.
+
+The spectrum requires no gaps, at most 2% RMS jitter, at least one second of capture, at least 120 Hz sample rate, and retained FFT bin spacing at most 1 Hz. The engine uses the first largest power-of-two block. The UI reports exactly how many samples it uses. Later changes may be missed. Bin spacing does not equal physical resolving power. A flat capture can have a valid FFT window but undefined band share because AC power is negligible.
+
+## Evidence, not an accuracy score
+
+- 46 unit, DSP, archive-integrity, HTTP, comparison, and CLI tests pass. See `npm test`.
+- 15/15 deterministic synthetic scenarios pass across five classes and three sample rates. See [evaluation JSON](docs/evaluation.json).
+- The normalized archive contains 520 successful synthetic inference records: 410 Baseten and 110 Fireworks. Corrected recorded token total: 1,313,133. See [reproducible audit](docs/benchmark_audit.json).
+- Recorded mean successful-call duration: Baseten 6.901 seconds, Fireworks 14.816 seconds. Different case mixes and sample counts prevent interpreting these aggregate means as a controlled speed comparison. Retry backoff and failed-attempt tokens are not fully recorded.
+- Full summary and uncertainty text exists for 200 benchmark rows. The remaining 320 rows contain telemetry without both text fields. Ten saved Baseten example responses are separately available in [recorded responses](docs/verified_live_responses.json).
+- Schema and ID-subset checks do not establish factual accuracy, cause attribution, or real-hardware performance. Coding-agent token consumption is not a product-quality metric.
+
+The new audit rejects eight mislabeled duplicate baseline rows and recovers the original Fireworks rows from the legacy provider array. Raw source JSON stays unchanged. Earlier reports contain historical totals; use the corrected audit and [status](docs/status.json) for aggregate claims.
+
+All evaluation captures are synthetic. No hardware validation, clinical use, production-reliability claim, or measured user outcome. The optional `modal_app.py` recipe is not deployed. The existing video predates the comparison feature; the judge guide covers the current interactive demo.

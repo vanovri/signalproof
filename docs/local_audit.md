@@ -1,3 +1,5 @@
+> Historical report. Aggregate metrics and validation claims are superseded by [the corrected reproducible audit](provider_telemetry_analysis.md), added 2026-11-02. Raw records are preserved.
+
 # SignalProof — Audit Lokal Meta Muse Spark Open (Baseten & Fireworks)
 Tanggal: 2026-11-01T23:44:36.136583+00:00
 Model Teruji:

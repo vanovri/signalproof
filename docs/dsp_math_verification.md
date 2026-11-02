@@ -68,13 +68,18 @@ Report correctly withholds spectrum (`E4==null`, `spectrum.length==0`) and flags
 ### 1.4 Withheld-spectrum guardrail
 
 ```js
-fftValid = gaps===0 && jitter<=0.02 && duration>=1.0 && fs>=120
+fftSamples = 2**floor(log2(L))
+fftValid = gaps===0 && jitter<=0.02 && duration>=1.0 && fs>=120 && fs/fftSamples<=1+1e-9
 fft      = fftValid ? spectrum(values, fs) : null
 E4       = fft && total>1e-18 ? 100*line/total : null
 spectrum = fft?.bins ?? []
 ```
 
 Proven by four test families:
+
+Update 2026-11-02: the retained FFT block must have bin spacing at most 1 Hz. A 1,501-sample capture at 1,500 Hz spans one second, but the retained 1,024-sample FFT block has 1.465 Hz bin spacing. The engine now withholds that spectrum. The 1e-9 Hz tolerance handles timestamp rounding at the boundary. See `tests/improvements.test.mjs`.
+
+The FFT uses only the first largest power-of-two block. `spectralWindow` exposes sample count, coverage, and bin spacing. Later capture changes may be missed. Bin spacing is not the same as physical frequency resolving power. Prior line-number references in this historical derivation refer to the original implementation.
 
 | Condition | Example | Expected |
 |-----------|---------|----------|

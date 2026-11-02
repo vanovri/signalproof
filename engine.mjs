@@ -54,7 +54,9 @@ export function analyze(rows, {railMin=0, railMax=3.3}={}) {
   const clipped=values.filter(v=>v<=railMin+.005*span||v>=railMax-.005*span).length;
   const rms=Math.sqrt(mean(values.map(v=>(v-dc)**2))), clippingPct=100*clipped/values.length;
   const duration=rows.at(-1)[0]-rows[0][0];
-  const fftValid=gaps===0&&jitter<=.02&&duration>=1&&fs>=120;
+  const fftSamples=2**Math.floor(Math.log2(values.length)), resolutionHz=fs/fftSamples;
+  // The retained FFT block must itself span a one-second window.
+  const fftValid=gaps===0&&jitter<=.02&&duration>=1&&fs>=120&&resolutionHz<=1+1e-9;
   const fft=fftValid?spectrum(values,fs):null;
   const total=fft?fft.bins.filter(b=>b.hz>=5&&b.hz<=Math.min(200,fs/2)).reduce((s,b)=>s+b.power,0):0;
   const line=fft?fft.bins.filter(b=>b.hz>=48&&b.hz<=52).reduce((s,b)=>s+b.power,0):0;
@@ -64,15 +66,15 @@ export function analyze(rows, {railMin=0, railMax=3.3}={}) {
   if(gaps||jitter>.02) findings.push({id:'timing',title:'Capture timing needs attention',severity:'issue',evidence:['E5'],next:'Check timestamp generation and the acquisition buffer. Recapture before interpreting the spectrum.'});
   if(linePowerPct!==null&&linePowerPct>=15) findings.push({id:'hum',title:'Strong energy near 50 Hz',severity:'issue',evidence:['E4'],next:'Compare a battery-powered low-voltage test capture with this recording. Check reference and cable routing.'});
   if(rms<span*.0001) findings.push({id:'flat',title:'Almost no AC variation',severity:'issue',evidence:['E2'],next:'Check the test source and acquisition path with a known low-voltage signal.'});
-  if(!fftValid) findings.push({id:'spectrum-unavailable',title:'Spectrum withheld',severity:'unknown',evidence:['E5','E6'],next:'Use at least 1 second, regular timestamps, and a sample rate of at least 120 Hz for this 50 Hz check.'});
+  if(!fftValid) findings.push({id:'spectrum-unavailable',title:'Spectrum withheld',severity:'unknown',evidence:['E5','E6'],next:'Use regular timestamps, at least 120 Hz, and enough samples for a retained power-of-two FFT block with bin spacing at most 1 Hz. Capture at least 1 second.'});
   if(!findings.length) findings.push({id:'no-flags',title:'No configured signal-quality flags',severity:'pass',evidence:['E2','E3','E4','E5'],next:'Compare against a calibrated reference capture. This result does not validate the sensor.'});
   const evidence=[
     {id:'E1',label:'DC mean',value:dc,unit:'V',method:'Arithmetic mean of the supplied values.'},
     {id:'E2',label:'AC RMS',value:rms,unit:'V',method:'Square root of mean squared deviation from the DC mean.'},
     {id:'E3',label:'Near-rail samples',value:clippingPct,unit:'%',method:'Samples within 0.5% of either declared ADC rail. Flag threshold: 1%.'},
-    {id:'E4',label:'48–52 Hz band share',value:linePowerPct,unit:'%',method:fft?`Hann-windowed ${fft.n}-point FFT. Band power / 5 Hz to min(200 Hz, Nyquist) power. Resolution ${fft.resolutionHz.toFixed(3)} Hz. Flag threshold: 15%.`:'Withheld for short, irregular, slow, or flat captures.'},
+    {id:'E4',label:'48–52 Hz band share',value:linePowerPct,unit:'%',method:fft?`Hann-windowed ${fft.n}-point FFT, first ${fft.n} of ${values.length} samples. Band power / 5 Hz to min(200 Hz, Nyquist) power. Bin spacing ${fft.resolutionHz.toFixed(3)} Hz. Flag threshold: 15%.${linePowerPct===null?' Band share undefined: insufficient AC power.':''}`:'Withheld: timing, duration, sample rate, or retained FFT bin-spacing conditions not met.'},
     {id:'E5',label:'Observed timing gaps',value:gaps,unit:'gaps',method:`Intervals > 1.5 × median interval. Relative RMS jitter excluding gaps: ${(jitter*100).toFixed(3)}%. No packet-loss claim.`},
     {id:'E6',label:'Capture duration',value:duration,unit:'s',method:`${rows.length} supplied samples. Sample rate inferred from median timestamp interval: ${fs.toFixed(3)} Hz.`}
   ];
-  return {schemaVersion:1,samples:rows.length,fs,duration,railMin,railMax,findings,evidence,spectrum:fft?.bins??[],limits:['Engineering prototype for low-voltage bench signals. No medical diagnosis or hardware control.','Thresholds are heuristics. Flags do not establish root cause.','Synthetic evaluation does not establish performance on real hardware.']};
+  return {schemaVersion:1,samples:rows.length,fs,duration,railMin,railMax,findings,evidence,spectrum:fft?.bins??[],spectralWindow:{available:fftValid,samples:fftValid?fftSamples:0,candidateSamples:fftSamples,binSpacingHz:resolutionHz,coveragePct:fftValid?100*fftSamples/rows.length:0},limits:['Engineering prototype for low-voltage bench signals. No medical diagnosis or hardware control.','Thresholds are heuristics. Flags do not establish root cause.','FFT uses only the first power-of-two block. Later changes may be missed. Bin spacing does not equal physical frequency resolving power.','Synthetic evaluation does not establish performance on real hardware.']};
 }

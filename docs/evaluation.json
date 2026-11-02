@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-02T01:56:45.965Z",
+  "date": "2026-11-02T10:18:20.023Z",
   "scope": "15 synthetic scenarios using known construction labels. Checks deterministic flags, not AI quality or real-world accuracy.",
   "passed": 15,
   "total": 15,

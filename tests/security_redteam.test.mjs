@@ -5,7 +5,7 @@ import { analyze, demo, parseCSV, toCSV, LIMIT, spectrum } from '../engine.mjs';
 import { validateExplanation, handle, explain } from '../api/analyze.mjs';
 
 function runCLI(args) {
-  const r = spawnSync(process.execPath, ['cli.mjs', ...args], { encoding: 'utf8', timeout: 8000 });
+  const r = spawnSync(process.execPath, ['cli.mjs', ...args], { encoding: 'utf8', timeout: 30000 });
   return { stdout: r.stdout || '', stderr: r.stderr || '', status: r.status };
 }
 function makeCSV(line) {

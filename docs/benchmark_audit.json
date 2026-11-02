@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    "docs/stress_benchmark.json",
+    "docs/local_live_matrix.json"
+  ],
+  "scope": "Archived synthetic inference records. Schema and ID checks are not a semantic accuracy score. No new model calls.",
+  "totals": {
+    "calls": 520,
+    "totalTokens": 1313133,
+    "reasoningTokens": 817388,
+    "meanSeconds": 8.575796153846158,
+    "minSeconds": 3.552,
+    "maxSeconds": 24.549,
+    "p50Seconds": 7.185,
+    "p95Seconds": 17.327,
+    "additionalAttempts": 77,
+    "acceptedPredictionTokens": 624895,
+    "rejectedPredictionTokens": 846491,
+    "speculativeAcceptance": 0.4246982097151937
+  },
+  "providers": {
+    "Baseten": {
+      "model": "meta-models/muse-spark-open-1026",
+      "calls": 410,
+      "totalTokens": 1091580,
+      "reasoningTokens": 699194,
+      "meanSeconds": 6.901468292682932,
+      "minSeconds": 3.552,
+      "maxSeconds": 13.053,
+      "p50Seconds": 6.632,
+      "p95Seconds": 10.418,
+      "additionalAttempts": 76,
+      "acceptedPredictionTokens": 624895,
+      "rejectedPredictionTokens": 846491,
+      "speculativeAcceptance": 0.4246982097151937
+    },
+    "Fireworks": {
+      "model": "accounts/fireworks/models/muse-spark-open",
+      "calls": 110,
+      "totalTokens": 221553,
+      "reasoningTokens": 118194,
+      "meanSeconds": 14.81647272727273,
+      "minSeconds": 8.562,
+      "maxSeconds": 24.549,
+      "p50Seconds": 14.062,
+      "p95Seconds": 22.948,
+      "additionalAttempts": 1,
+      "acceptedPredictionTokens": 0,
+      "rejectedPredictionTokens": 0,
+      "speculativeAcceptance": null
+    }
+  },
+  "baselineCalls": 20,
+  "recoveredBaselinePairs": [
+    "Fireworks:healthy:en",
+    "Fireworks:healthy:id",
+    "Fireworks:clipping:en",
+    "Fireworks:clipping:id",
+    "Fireworks:gaps:en",
+    "Fireworks:gaps:id",
+    "Fireworks:flat:en",
+    "Fireworks:flat:id"
+  ],
+  "rejectedProviderRows": [
+    {
+      "source": "local_live_matrix.json:results",
+      "kind": "healthy",
+      "language": "en",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:results",
+      "kind": "healthy",
+      "language": "id",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:results",
+      "kind": "clipping",
+      "language": "en",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:results",
+      "kind": "clipping",
+      "language": "id",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:results",
+      "kind": "gaps",
+      "language": "en",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:results",
+      "kind": "gaps",
+      "language": "id",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:results",
+      "kind": "flat",
+      "language": "en",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:results",
+      "kind": "flat",
+      "language": "id",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:fireworks_results",
+      "kind": "healthy",
+      "language": "en",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:fireworks_results",
+      "kind": "healthy",
+      "language": "id",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:fireworks_results",
+      "kind": "clipping",
+      "language": "en",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:fireworks_results",
+      "kind": "clipping",
+      "language": "id",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:fireworks_results",
+      "kind": "gaps",
+      "language": "en",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:fireworks_results",
+      "kind": "gaps",
+      "language": "id",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:fireworks_results",
+      "kind": "flat",
+      "language": "en",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    },
+    {
+      "source": "local_live_matrix.json:fireworks_results",
+      "kind": "flat",
+      "language": "id",
+      "reason": "Provider/model mismatch",
+      "provider": "Fireworks",
+      "model": "meta-models/muse-spark-open-1026"
+    }
+  ],
+  "textCoverage": {
+    "completeTextInBenchmarkArchive": 200,
+    "telemetryOnly": 320,
+    "recordedExamplesFile": "docs/verified_live_responses.json"
+  },
+  "evidenceCounts": {
+    "E1": 520,
+    "E2": 520,
+    "E3": 520,
+    "E4": 520,
+    "E5": 520,
+    "E6": 520
+  },
+  "findingCounts": {
+    "no-flags": 116,
+    "hum": 132,
+    "clipping": 128,
+    "timing": 88,
+    "spectrum-unavailable": 96,
+    "flat": 64
+  },
+  "limits": [
+    "Source rows report successful validation. Full response text is absent for some calls, so those semantic claims cannot be independently regraded.",
+    "Latency is recorded successful-call duration. Retry backoff, failed-attempt tokens, cost, and total user wait are not fully captured.",
+    "Provider samples differ in size and case mix. Aggregate latency is descriptive, not a controlled speed comparison.",
+    "E4 null can mean timing, rate, duration, FFT coverage, or insufficient AC power. An ID reference alone does not validate prose.",
+    "All captures are synthetic. No hardware, user-outcome, or production-reliability evaluation."
+  ]
+}

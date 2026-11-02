@@ -1,3 +1,5 @@
+> Historical report. Aggregate metrics and validation claims are superseded by [the corrected reproducible audit](provider_telemetry_analysis.md), added 2026-11-02. Raw records are preserved.
+
 # Live Stress, Sweep & Monte Carlo Benchmark — Meta Muse Spark Open (520/520 Verified Calls)
 
 - **Timestamp (UTC)**: `2026-11-02T01:39:17.282116+00:00`
