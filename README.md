@@ -50,6 +50,7 @@ Open `http://127.0.0.1:8789`. `npm start` loads `.env` if present. Existing envi
 ```sh
 node cli.mjs --demo hum
 node cli.mjs --demo gaps
+node cli.mjs --demo healthy --compare-demo hum
 node cli.mjs --file samples/hum.csv --json
 # Explicit env loading for a live CLI request:
 node --env-file=.env cli.mjs --demo hum --explain --lang id
@@ -68,7 +69,7 @@ The spectrum requires no gaps, at most 2% RMS jitter, at least one second of cap
 
 ## Evidence, not an accuracy score
 
-- 46 unit, DSP, archive-integrity, HTTP, comparison, and CLI tests pass. See `npm test`.
+- 54 unit, DSP, archive-integrity, HTTP, comparison, and CLI tests pass. See `npm test`.
 - 15/15 deterministic synthetic scenarios pass across five classes and three sample rates. See [evaluation JSON](docs/evaluation.json).
 - The normalized archive contains 520 successful synthetic inference records: 410 Baseten and 110 Fireworks. Corrected recorded token total: 1,313,133. See [reproducible audit](docs/benchmark_audit.json).
 - Recorded mean successful-call duration: Baseten 6.901 seconds, Fireworks 14.816 seconds. Different case mixes and sample counts prevent interpreting these aggregate means as a controlled speed comparison. Retry backoff and failed-attempt tokens are not fully recorded.

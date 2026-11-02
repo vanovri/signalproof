@@ -2,8 +2,8 @@
   "asOf": "2026-11-02",
   "deterministicPrototype": "working",
   "codeTests": {
-    "passed": 46,
-    "total": 46
+    "passed": 54,
+    "total": 54
   },
   "syntheticScenarios": {
     "passed": 15,

@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { analyze, demo, parseCSV } from './engine.mjs';
 import { explain } from './api/analyze.mjs';
+import { compareReports } from './comparison.mjs';
 const VALID_KINDS = ['healthy','hum','clipping','gaps','flat'];
 const VALID_LANGS = ['en','id'];
 function printHelp() {
@@ -22,13 +23,17 @@ Options:
   --explain         Request live Meta Muse Spark Open explanation (needs BASETEN_API_KEY or FIREWORKS_API_KEY)
   --lang <en|id>    Explanation language (default en)
   --json            Output raw JSON instead of ASCII table
+  --compare <path>  Reference CSV for side-by-side E1-E6 comparison
+  --compare-demo <kind> Reference synthetic preset for side-by-side comparison
   --help, -h        Show this help
 
 Examples:
   node cli.mjs --demo hum --fs 250
   node cli.mjs --demo gaps --rail-min 0 --rail-max 3.3
   node cli.mjs --file samples/hum.csv --explain --lang id
-  node cli.mjs --demo flat --json`.trim());
+  node cli.mjs --demo flat --json
+  node cli.mjs --demo healthy --compare-demo hum
+  node cli.mjs --demo healthy --compare-demo gaps --json`.trim());
 }
 function fail(msg) {
   console.error(`Error: ${msg}`);
@@ -36,7 +41,7 @@ function fail(msg) {
   process.exit(1);
 }
 function parseArgs(argv) {
-  const out = { demo: null, file: null, fs: 250, railMin: 0, railMax: 3.3, explain: false, lang: 'en', json: false, help: false };
+  const out = { demo: null, file: null, fs: 250, railMin: 0, railMax: 3.3, explain: false, lang: 'en', json: false, help: false, compare: null, compareDemo: null };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--help' || a === '-h') out.help = true;
@@ -74,11 +79,21 @@ function parseArgs(argv) {
       if (!VALID_LANGS.includes(v)) fail(`Invalid --lang '${v}'. Use en|id`);
       out.lang = v;
     } else if (a === '--json') out.json = true;
-    else fail(`Unknown option '${a}'`);
+    else if (a === '--compare') {
+      const v = argv[++i];
+      if (!v) fail('--compare requires a path');
+      out.compare = v;
+    } else if (a === '--compare-demo') {
+      const v = argv[++i];
+      if (!v) fail('--compare-demo requires a value (healthy|hum|clipping|gaps|flat)');
+      if (!VALID_KINDS.includes(v)) fail(`Unknown compare demo kind '${v}'. Use: ${VALID_KINDS.join('|')}`);
+      out.compareDemo = v;
+    } else fail(`Unknown option '${a}'`);
   }
   if (out.help) return out;
   if (!out.demo && !out.file) fail('Provide --demo <kind> or --file <path.csv>');
   if (out.demo && out.file) fail('Use either --demo or --file, not both');
+  if (out.compare && out.compareDemo) fail('Use either --compare or --compare-demo, not both');
   return out;
 }
 function fmtValueForEvidence(e) {
@@ -86,6 +101,30 @@ function fmtValueForEvidence(e) {
   if (e.unit === 'gaps') return String(e.value);
   if (e.id === 'E5') return String(e.value);
   return Number(e.value).toFixed(3);
+}
+function fmtDelta(id, delta) {
+  if (delta === null || delta === undefined) return 'WITHHELD';
+  if (id === 'E5') return Number.isInteger(delta) ? String(delta) : Number(delta).toFixed(3);
+  return Number(delta).toFixed(3);
+}
+function buildComparison(reference, current) {
+  try {
+    return compareReports(reference, current);
+  } catch (ex) {
+    const evidence = current.evidence.map(e => {
+      const before = reference.evidence.find(r => r.id === e.id);
+      const afterVal = e.value;
+      const beforeVal = before ? before.value : null;
+      const delta = (beforeVal === null || afterVal === null) ? null : afterVal - beforeVal;
+      return { id: e.id, label: e.label, unit: e.unit, before: beforeVal, after: afterVal, delta, primary: afterVal, reference: beforeVal };
+    });
+    const cleared = reference.findings.filter(f => f.id !== 'no-flags' && !current.findings.some(c => c.id === f.id)).map(f => f.id);
+    const added = current.findings.filter(f => f.id !== 'no-flags' && !reference.findings.some(c => c.id === f.id)).map(f => f.id);
+    return {
+      evidence: evidence.map(x => ({ id: x.id, label: x.label, unit: x.unit, before: x.before, after: x.after, primary: x.primary, reference: x.reference, delta: x.delta, deltaDisplay: x.delta === null ? 'WITHHELD' : Number(x.delta).toFixed(3) })),
+      cleared, added, notice: 'Changes describe these captures only. They do not prove a repair, a cause, or sensor accuracy.'
+    };
+  }
 }
 function repeat(ch, n) { return ch.repeat(n); }
 function renderTable(headers, rows, colWidths) {
@@ -200,6 +239,40 @@ function renderReport(report, sourceLabel) {
   lines.push('='.repeat(72));
   return lines.join('\n');
 }
+function renderComparison(comparison, primaryLabel, referenceLabel) {
+  const lines = [];
+  lines.push('');
+  lines.push('='.repeat(72));
+  lines.push(' Comparison \u2014 Primary vs Reference (deterministic E1-E6 deltas)');
+  lines.push('='.repeat(72));
+  lines.push(` Primary   : ${primaryLabel}`);
+  lines.push(` Reference : ${referenceLabel}`);
+  lines.push('');
+  const headers = ['ID', 'Label', 'Primary', 'Reference', 'Delta', 'Unit'];
+  const colWidths = [4, 22, 12, 12, 12, 6];
+  const rows = comparison.evidence.map(e => {
+    const primaryVal = e.primary !== undefined ? e.primary : e.after;
+    const referenceVal = e.reference !== undefined ? e.reference : e.before;
+    const delta = e.delta;
+    const primaryStr = primaryVal === null ? 'Unavailable' : (e.unit === 'gaps' || e.id === 'E5') ? String(primaryVal) : Number(primaryVal).toFixed(3);
+    const referenceStr = referenceVal === null ? 'Unavailable' : (e.unit === 'gaps' || e.id === 'E5') ? String(referenceVal) : Number(referenceVal).toFixed(3);
+    const deltaStr = fmtDelta(e.id, delta);
+    return [e.id, e.label, primaryStr, referenceStr, deltaStr, e.unit];
+  });
+  lines.push(renderTable(headers, rows, colWidths));
+  lines.push('');
+  if (comparison.cleared && comparison.added) {
+    lines.push(` Cleared findings (in reference, not in primary): ${comparison.cleared.length ? comparison.cleared.join(', ') : '(none)'}`);
+    lines.push(` Added findings (in primary, not in reference): ${comparison.added.length ? comparison.added.join(', ') : '(none)'}`);
+    lines.push('');
+  }
+  if (comparison.notice) {
+    lines.push(` Notice: ${comparison.notice}`);
+    lines.push('');
+  }
+  lines.push('='.repeat(72));
+  return lines.join('\n');
+}
 async function main() {
   const opts = parseArgs(process.argv);
   if (opts.help) { printHelp(); return; }
@@ -228,6 +301,38 @@ async function main() {
     console.error(`Analyze error: ${e.message}`);
     process.exit(1);
   }
+  let compareReport = null;
+  let compareSourceLabel = null;
+  let comparison = null;
+  if (opts.compare || opts.compareDemo) {
+    let cRows;
+    if (opts.compareDemo) {
+      const fs = opts.fs;
+      const n = Math.max(64, Math.min(32768, Math.round(fs * 4)));
+      cRows = demo(opts.compareDemo, { fs, n, amplitude: 0.32 });
+      compareSourceLabel = `Synthetic / ${opts.compareDemo} (demo=${opts.compareDemo}, fs=${fs} Hz, ${cRows.length} samples)`;
+    } else if (opts.compare) {
+      const p = resolve(opts.compare);
+      let text;
+      try { text = await readFile(p, 'utf8'); } catch (e) {
+        console.error(`Error: cannot read file '${opts.compare}': ${e.message}`);
+        process.exit(1);
+      }
+      try { cRows = parseCSV(text); } catch (e) {
+        console.error(`CSV error: ${e.message}`);
+        process.exit(1);
+      }
+      compareSourceLabel = `File / ${opts.compare} (${cRows.length} samples)`;
+    }
+    try { compareReport = analyze(cRows, { railMin: opts.railMin, railMax: opts.railMax }); } catch (e) {
+      console.error(`Analyze error (reference): ${e.message}`);
+      process.exit(1);
+    }
+    comparison = buildComparison(compareReport, report);
+    if (comparison && comparison.evidence && comparison.evidence[0] && comparison.evidence[0].primary === undefined) {
+      comparison.evidence = comparison.evidence.map(e => ({ ...e, primary: e.after, reference: e.before }));
+    }
+  }
   let explanation = null;
   if (opts.explain) {
     try { explanation = await explain(report, opts.lang); } catch (e) {
@@ -236,11 +341,21 @@ async function main() {
   }
   if (opts.json) {
     const out = { report, source: sourceLabel };
+    if (comparison) {
+      out.comparison = comparison;
+      out.referenceReport = compareReport;
+      out.referenceSource = compareSourceLabel;
+      out.primarySource = sourceLabel;
+      out.deltas = Object.fromEntries(comparison.evidence.map(e => [e.id, e.delta === null ? 'WITHHELD' : e.delta]));
+    }
     out.explanation = opts.explain ? explanation : { status: 'not-requested' };
     console.log(JSON.stringify(out, null, 2));
     return;
   }
   console.log(renderReport(report, sourceLabel));
+  if (comparison) {
+    console.log(renderComparison(comparison, sourceLabel, compareSourceLabel));
+  }
   if (opts.explain) {
     console.log('');
     console.log('Meta Muse Spark Open Explanation:');

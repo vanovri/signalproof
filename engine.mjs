@@ -5,7 +5,7 @@ const median = a => {const b = [...a].sort((x,y)=>x-y); const m=b.length>>1; ret
 const finite = x => typeof x === 'number' && Number.isFinite(x);
 export function parseCSV(text) {
   if (typeof text !== 'string' || text.length > 2_000_000) throw Error('CSV must be text under 2 MB.');
-  const lines=text.replace(/^\uFEFF/, '').trim().split(/\r?\n/);
+  const lines=text.replace(/^\uFEFF/, '').trim().split(/\r\n|\n|\r/);
   if(lines.shift()?.trim() !== 'time_s,value') throw Error('Use the exact CSV header: time_s,value');
   if(lines.length<64 || lines.length>LIMIT) throw Error(`Use 64 to ${LIMIT} samples.`);
   return lines.map((line,i)=>{

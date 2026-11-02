@@ -6,6 +6,11 @@ export function resolveProvider() {
   return null;
 }
 export function validateExplanation(value, report) {
+  const FORBIDDEN = ['__proto__', 'constructor', 'prototype'];
+  for (const k of FORBIDDEN) if (Object.prototype.hasOwnProperty.call(value, k)) throw Error(`Prototype pollution key rejected: ${k}`);
+  if (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null) throw Error('Prototype pollution key rejected: __proto__');
+  if (Array.isArray(value.evidenceIds) && value.evidenceIds.some(id => FORBIDDEN.includes(id))) throw Error('Prototype pollution key rejected.');
+  if (Array.isArray(value.findingIds) && value.findingIds.some(id => FORBIDDEN.includes(id))) throw Error('Prototype pollution key rejected.');
   if(!value||typeof value!=='object'||Array.isArray(value)||typeof value.summary!=='string'||!value.summary.trim()||value.summary.length>1800) throw Error('Invalid model summary.');
   if(!Array.isArray(value.evidenceIds)||!value.evidenceIds.length||!value.evidenceIds.every(id=>report.evidence.some(e=>e.id===id))) throw Error('Unknown evidence reference.');
   if(new Set(value.evidenceIds).size !== value.evidenceIds.length) throw Error('Duplicate evidence reference.');

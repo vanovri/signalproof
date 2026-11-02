@@ -165,3 +165,126 @@ test('cli.mjs --demo gaps output verification - withheld spectrum', () => {
   assert.ok(p.report.findings.some(f=>f.id==='timing'));
   assert.ok(p.report.findings.some(f=>f.id==='spectrum-unavailable'));
 });
+test('cli.mjs --demo healthy --compare-demo hum ASCII shows deterministic E1-E6 deltas', () => {
+  const r = runCLI(['--demo','healthy','--compare-demo','hum']);
+  assert.equal(r.status, 0);
+  assert.ok(r.stdout.includes('Comparison'));
+  assert.ok(r.stdout.includes('Primary   : Synthetic / healthy'));
+  assert.ok(r.stdout.includes('Reference : Synthetic / hum'));
+  assert.ok(r.stdout.includes('E1') && r.stdout.includes('E4'));
+  assert.ok(r.stdout.includes('-73.545') || r.stdout.includes('-73.54'));
+  assert.ok(r.stdout.includes('Delta'));
+  assert.ok(r.stdout.includes('Primary') && r.stdout.includes('Reference') && r.stdout.includes('Delta'));
+  assert.ok(r.stdout.includes('do not prove a repair') || r.stdout.includes('Notice'));
+});
+test('cli.mjs --demo healthy --compare-demo hum JSON shows numeric E4 delta', () => {
+  const j = runCLI(['--demo','healthy','--compare-demo','hum','--json']);
+  assert.equal(j.status, 0);
+  const p = JSON.parse(j.stdout);
+  assert.ok(p.comparison, 'comparison object exists');
+  assert.ok(p.referenceReport, 'referenceReport exists');
+  assert.equal(p.primarySource.includes('healthy'), true);
+  assert.equal(p.referenceSource.includes('hum'), true);
+  assert.ok(p.deltas.E4 < -70);
+  assert.equal(p.comparison.cleared.includes('hum'), true);
+});
+test('cli.mjs --demo healthy --compare-demo gaps --json reports WITHHELD for E4 delta', () => {
+  const j = runCLI(['--demo','healthy','--compare-demo','gaps','--json']);
+  assert.equal(j.status, 0);
+  const p = JSON.parse(j.stdout);
+  assert.ok(p.comparison);
+  const e4 = p.comparison.evidence.find(e => e.id === 'E4');
+  assert.ok(e4);
+  assert.equal(e4.delta, null, 'E4 delta should be null when either withholds');
+  assert.equal(p.deltas.E4, 'WITHHELD', 'deltas.E4 should be WITHHELD string');
+  assert.ok(e4.deltaDisplay === 'WITHHELD' || JSON.stringify(p).includes('WITHHELD'));
+  assert.ok(JSON.stringify(p).includes('WITHHELD'), 'JSON should contain WITHHELD literal');
+  assert.equal(e4.primary !== null, true);
+  assert.equal(e4.reference, null);
+  assert.equal(p.referenceReport.evidence.find(e=>e.id==='E4').value, null);
+  assert.equal(p.comparison.evidence.find(e=>e.id==='E5').delta, -1);
+});
+test('cli.mjs --demo healthy --compare-demo gaps ASCII shows WITHHELD', () => {
+  const r = runCLI(['--demo','healthy','--compare-demo','gaps']);
+  assert.equal(r.status, 0);
+  assert.ok(r.stdout.includes('WITHHELD'), 'ASCII should show WITHHELD for E4 delta');
+  assert.ok(r.stdout.includes('Unavailable') && r.stdout.includes('WITHHELD'));
+  assert.ok(r.stdout.includes('Comparison'));
+});
+test('IEEE-754 subnormal near-zero captures are handled deterministically', () => {
+  const rows = Array.from({length:1000}, (_,i) => [i*0.004, Number.MIN_VALUE * (i%2===0 ? 1 : -1) + 1.65]);
+  const rows2 = Array.from({length:1000}, (_,i) => [i*0.004, 1e-308 * Math.sin(2*Math.PI*12*i*0.004) + 1.65]);
+  for (const r of [rows, rows2]) {
+    const report = analyze(r);
+    assert.ok(Number.isFinite(report.evidence.find(e=>e.id==='E1').value));
+    assert.ok(Number.isFinite(report.evidence.find(e=>e.id==='E2').value));
+    assert.equal(report.samples, 1000);
+    assert.ok(report.evidence.find(e=>e.id==='E2').value >= 0);
+  }
+  const csvRows = Array.from({length:70}, (_,i) => `${(i*0.004).toFixed(3)},${(5e-324).toExponential()}`).join('\n');
+  const csv = 'time_s,value\n' + csvRows;
+  const parsed = parseCSV(csv);
+  assert.equal(parsed.length, 70);
+  assert.ok(parsed[0][1] === 5e-324 || parsed[0][1] === Number((5e-324).toExponential()));
+  const flatSubnormal = Array.from({length:1000}, (_,i) => [i*0.004, 5e-324]);
+  const flatReport = analyze(flatSubnormal);
+  assert.ok(flatReport.findings.some(f=>f.id==='flat') || flatReport.evidence.find(e=>e.id==='E2').value < 3.3*0.0001);
+});
+test('CRLF LF mixed CSV edge cases are parsed correctly', () => {
+  const linesCRLF = Array.from({length:50}, (_,i) => `${(i*0.004).toFixed(4)},1.65\r\n`).join('');
+  const linesLF = Array.from({length:50}, (_,i) => `${((50+i)*0.004).toFixed(4)},1.65\n`).join('');
+  const csvMixed = 'time_s,value\r\n' + linesCRLF + linesLF;
+  const parsed = parseCSV(csvMixed);
+  assert.equal(parsed.length, 100);
+  assert.ok(parsed[0][0] === 0 && parsed[99][0] > 0.3);
+  const csvWithCRLFOnly = 'time_s,value\r\n' + Array.from({length:70}, (_,i)=>`${(i*0.004).toFixed(3)},1.65\r\n`).join('');
+  const p2 = parseCSV(csvWithCRLFOnly);
+  assert.equal(p2.length, 70);
+  assert.equal(p2[0][1], 1.65);
+  const bomMixed = '\uFEFFtime_s,value\n' + '0,1.65\r\n0.004,1.65\n0.008,1.65\r\n' + Array.from({length:67}, (_,i)=>`${((3+i)*0.004).toFixed(3)},1.65`).join('\n');
+  const p3 = parseCSV(bomMixed);
+  assert.equal(p3.length, 70);
+});
+test('prototype-pollution key rejection in validateExplanation', () => {
+  const report = analyze(demo('healthy'));
+  const base = { summary: 'Valid summary', evidenceIds: ['E1'], findingIds: ['no-flags'], uncertainty: 'Unknown root cause' };
+  const polluted1 = { ...base, __proto__: { polluted: true } };
+  assert.throws(() => validateExplanation(polluted1, report), /Prototype pollution|Invalid key/);
+  const polluted2 = { ...base, constructor: { polluted: true } };
+  assert.throws(() => validateExplanation(polluted2, report), /Prototype pollution|Invalid key/);
+  const polluted3 = { ...base, prototype: { polluted: true } };
+  assert.throws(() => validateExplanation(polluted3, report), /Prototype pollution|Invalid key/);
+  const polluted4 = { ...base, evidenceIds: ['__proto__'] };
+  assert.throws(() => validateExplanation(polluted4, report), /Prototype pollution|Unknown evidence/);
+  const polluted5 = { ...base, findingIds: ['constructor'] };
+  assert.throws(() => validateExplanation(polluted5, report), /Prototype pollution|Unknown finding/);
+  assert.doesNotThrow(() => validateExplanation(base, report));
+  const maliciousJSON = '{"summary":"x","evidenceIds":["E1"],"findingIds":["no-flags"],"uncertainty":"U","__proto__":{"a":1}}';
+  const parsed = JSON.parse(maliciousJSON);
+  assert.throws(() => validateExplanation(parsed, report), /Prototype pollution/);
+});
+test('cli.mjs --compare file.csv side-by-side via file', async () => {
+  const fs = await import('node:fs');
+  const { writeFileSync, unlinkSync } = fs;
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const tmpFile = join(tmpdir(), `signalproof_test_${Date.now()}.csv`);
+  const humRows = demo('hum');
+  writeFileSync(tmpFile, toCSV(humRows));
+  try {
+    const r = runCLI(['--demo','healthy','--compare', tmpFile]);
+    assert.equal(r.status, 0);
+    assert.ok(r.stdout.includes('Comparison'));
+    assert.ok(r.stdout.includes('Primary') && r.stdout.includes('Reference'));
+    assert.ok(r.stdout.includes('E4') && (r.stdout.includes('-73.54') || r.stdout.includes('-73.545')));
+    const j = runCLI(['--demo','healthy','--compare', tmpFile, '--json']);
+    assert.equal(j.status, 0);
+    const p = JSON.parse(j.stdout);
+    assert.ok(p.comparison);
+    assert.ok(p.deltas.E4 < -70);
+    assert.equal(p.referenceReport.samples, humRows.length);
+  } finally {
+    try { unlinkSync(tmpFile); } catch {}
+  }
+});
+
