@@ -8,9 +8,11 @@ export function resolveProvider() {
 export function validateExplanation(value, report) {
   if(!value||typeof value!=='object'||Array.isArray(value)||typeof value.summary!=='string'||!value.summary.trim()||value.summary.length>1800) throw Error('Invalid model summary.');
   if(!Array.isArray(value.evidenceIds)||!value.evidenceIds.length||!value.evidenceIds.every(id=>report.evidence.some(e=>e.id===id))) throw Error('Unknown evidence reference.');
+  if(new Set(value.evidenceIds).size !== value.evidenceIds.length) throw Error('Duplicate evidence reference.');
   if(!Array.isArray(value.findingIds)||!value.findingIds.length||!value.findingIds.every(id=>report.findings.some(f=>f.id===id))) throw Error('Unknown finding reference.');
+  if(new Set(value.findingIds).size !== value.findingIds.length) throw Error('Duplicate finding reference.');
   if(typeof value.uncertainty!=='string'||!value.uncertainty.trim()||value.uncertainty.length>1200) throw Error('Missing uncertainty.');
-  return {summary:value.summary,evidenceIds:[...new Set(value.evidenceIds)],findingIds:[...new Set(value.findingIds)],uncertainty:value.uncertainty};
+  return {summary:value.summary,evidenceIds:[...value.evidenceIds],findingIds:[...value.findingIds],uncertainty:value.uncertainty};
 }
 export async function explain(report, language='en', requestFetch=fetch) {
   const cfg=resolveProvider();
