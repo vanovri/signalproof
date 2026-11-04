@@ -2,7 +2,7 @@
 
 An evidence-linked workbench for low-voltage electronics captures. Inspect a CSV, identify capture-quality flags, compare a new recording, and ask Meta Muse Spark Open to explain the measured evidence in English or Indonesian.
 
-[Open workbench](https://vanovri.github.io/signalproof/) · [Three-minute narrated walkthrough](https://vanovri.github.io/signalproof/docs/demo.html) · [Judge guide](docs/JUDGE_GUIDE.md) · [Corrected benchmark audit](docs/provider_telemetry_analysis.md)
+[Open workbench](https://vanovri.github.io/signalproof/) · [Three-minute narrated walkthrough (YouTube)](https://www.youtube.com/watch?v=Zn9r72hdEFs) · [Walkthrough page](https://vanovri.github.io/signalproof/docs/demo.html) · [Judge guide](docs/JUDGE_GUIDE.md) · [Corrected benchmark audit](docs/provider_telemetry_analysis.md)
 
 ## A concrete workflow
 
